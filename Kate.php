@@ -16,13 +16,11 @@
 
 abstract class Kate {
 	
-	protected static $_defaultDb;
-	
-	protected $_db;
-	protected $_primary;
-	protected $_id;
-	protected $_data = array();
-	protected $_describeTable;
+	/*
+	 *
+	 * Overwrite this
+	 *
+	 */
 	protected $_source = array(
 		'type' => 'db',
 		'table' => array(
@@ -31,6 +29,22 @@ abstract class Kate {
 			'fields' => '*'
 		)
 	);
+	
+	
+	/*
+	 *
+	 * Core properties
+	 *
+	 */
+	protected static $_defaultDb;
+	
+	protected $_db;
+	protected $_cache;
+	
+	protected $_primary;
+	protected $_id;
+	protected $_data = array();
+	protected $_describeTable;
 	
 	public $_isNew = false;
 	public $_fetched = false;
@@ -330,7 +344,7 @@ abstract class Kate {
 		
 		if(!isset($this->_describeTable) && (!$this->_hasCache() || !$this->_describeTable = $cache->load($cacheKey))) {
 			$this->_describeTable = $db->describeTable($this->_getTableName());
-			if($this->hasCache()) $cache->save($this->_describeTable, $cacheKey);
+			if($this->_hasCache()) $cache->save($this->_describeTable, $cacheKey);
 		}
 		
 		return $this->_describeTable;
