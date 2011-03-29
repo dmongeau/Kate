@@ -12,6 +12,7 @@
  * @author David Mongeau-Petitpas <dmp@commun.ca>
  * @version 0.1
  *
+ *
  */
 
 abstract class Kate {
