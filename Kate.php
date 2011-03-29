@@ -52,8 +52,8 @@ abstract class Kate {
 	public function __construct($primary = null) {
 		
 		if(isset($primary)) {
+			$primary = $this->verifyPrimary($primary);
 			$this->setPrimary($primary);
-			$this->verifyPrimary();
 		}
 		
 	}
@@ -63,7 +63,9 @@ abstract class Kate {
 		$db = $this->getDatabase();
 		
 		$select = $db->select()->from($this->_getTable(),$this->_getTableFields());
-				
+		
+		$select->where($this->_getTablePrimary(true).' = ?', $this->getPrimary());
+		
 		if(method_exists($this,'_filterSelect')) {
 			$filterSelect = $this->_filterSelect($select);
 			if(isset($filterSelect)) $select = $filterSelect;
@@ -76,12 +78,6 @@ abstract class Kate {
 			}
 		}
 		
-		if(method_exists($this,'_selectPrimary')) {
-			$select = $this->_selectPrimary($select);
-		} else {
-			$id = $this->getPrimary();
-			$select->where($this->_getTablePrimary(true).' = ?', $id);
-		}
 		$data = $db->fetchRow($select);
 		
 		if(!$data) throw new App_Exception('Il s\'est produit une erreur',404);
@@ -210,22 +206,22 @@ abstract class Kate {
 		$this->_primary = $primary;
 	}
 	
-	public function verifyPrimary() {
+	public function verifyPrimary($primary) {
 		
 		$db = $this->getDatabase();
 		
-		$select = $db->select()->from($this->_getTable(),array($this->_getTablePrimary(true)));
+		$select = $db->select()->from($this->_getTable(),array($this->_getTablePrimary()));
 		
 		if(method_exists($this,'_selectPrimary')) {
-			$select = $this->_selectPrimary($select);
+			$select = $this->_selectPrimary($select,$primary);
 		} else {
-			$id = $this->getPrimary();
-			$select->where($this->_getTablePrimary(true).' = ?', $id);
+			$select->where($this->_getTablePrimary(true).' = ?', $primary);
 		}
 		$data = $db->fetchRow($select);
 		
 		if(!$data) throw new App_Exception('Invalid item',500);
-		else $this->setPrimary($data[$this->_getTablePrimary()]);
+		
+		return $data[$this->_getTablePrimary()];
 	}
 	
 	public function isNew($value = null) {
