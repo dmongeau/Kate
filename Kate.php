@@ -225,6 +225,7 @@ abstract class Kate {
 		$data = $db->fetchRow($select);
 		
 		if(!$data) throw new App_Exception('Invalid item',500);
+		else $this->setPrimary($data[$this->_getTablePrimary()]);
 	}
 	
 	public function isNew($value = null) {
