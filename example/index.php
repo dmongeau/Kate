@@ -1,7 +1,6 @@
 <?php
 
-define('PATH_ZEND',dirname(__FILE__).'/../../Gregory/Gregory/');
-set_include_path(get_include_path().PATH_SEPARATOR.PATH_ZEND);
+set_include_path(get_include_path().PATH_SEPARATOR.dirname(__FILE__).'/');
 
 
 require_once 'Zend/Db.php';
