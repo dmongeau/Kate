@@ -5,7 +5,7 @@ require_once '../Kate.php';
 
 class Item extends Kate {
 	
-	protected $_source = array(
+	static $source = array(
 		'type' => 'db',
 		'table' => array(
 			'name' => array('i' => 'items'),
