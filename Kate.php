@@ -23,7 +23,7 @@ abstract class Kate {
 	 * Overwrite this
 	 *
 	 */
-	static $source = array(
+	public $source = array(
 		'type' => 'db',
 		'table' => array(
 			'name' => array('i' => 'items'),
@@ -102,7 +102,7 @@ abstract class Kate {
 		$db = $this->getDatabase();
 		
 		$primary = $this->getPrimary();
-		$source = self::getSource();
+		$source = $this->getSource();
 		$inputs = $this->getData();
 			
 		$data = array();	
@@ -141,7 +141,7 @@ abstract class Kate {
 		$db = $this->getDatabase();
 		
 		$primary = $this->getPrimary();
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if($primary) {
 			
@@ -165,7 +165,7 @@ abstract class Kate {
 		$db = $this->getDatabase();
 		
 		$primary = $this->getPrimary();
-		$source = self::getSource();
+		$source = $this->getSource();
 				
 		if($primary && $this->isNew()) {
 			
@@ -227,7 +227,7 @@ abstract class Kate {
 		}
 		$data = $db->fetchRow($select);
 		
-		if(!$data) throw new App_Exception('Invalid item',500);
+		if(!$data) throw new Exception('Il s\'est produit une erreur',500);
 		
 		return $data[$this->_getTablePrimary()];
 	}
@@ -246,6 +246,13 @@ abstract class Kate {
 	 *
 	 */
 	
+	protected function getSource() {
+		return $this->source;
+	}
+	public function setSource($source) {
+		$this->source = $source;
+	}
+	
 	public function setDatabase(&$db) {
 		$this->_db = $db;
 	}
@@ -255,21 +262,21 @@ abstract class Kate {
 	}
 	
 	protected function _getTable() {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(is_array($source['table']['name'])) return $source['table']['name'];
 		else return array($source['table']['name']);
 	}
 	
 	protected function _getTableName() {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(is_array($source['table']['name'])) return $source['table']['name'][$this->_getTableShort()];
 		else return $source['table']['name'];
 	}
 	
 	protected function _getTableShort() {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(is_array($source['table']['name'])) {
 			$keys = array_keys($source['table']['name']);
@@ -278,21 +285,21 @@ abstract class Kate {
 	}
 	
 	protected function _getTablePrimary($fieldname = false) {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(!$fieldname) return $source['table']['primary'];
 		else return $this->_getTableFieldName($source['table']['primary']);
 	}
 	
 	protected function _getTableFields() {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(!is_array($source['table']['fields'])) return array($source['table']['fields']);
 		else return $source['table']['fields'];
 	}
 	
 	protected function _getTableFieldName($field) {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(strpos($field,'.') !== false) return $field;
 		
@@ -301,7 +308,7 @@ abstract class Kate {
 	}
 	
 	protected function _getTableLeftJoins() {
-		$source = self::getSource();
+		$source = $this->getSource();
 		
 		if(isset($source['table']['leftJoins']) && is_array($source['table']['leftJoins'])) return $source['table']['leftJoins'];
 		else return null;
@@ -390,13 +397,6 @@ abstract class Kate {
 		return self::$_defaultDb;
 	}
 	
-	protected static function getSource() {
-		return self::$source;
-	}
-	public static function setSource($source) {
-		self::$source = $source;
-	}
-	
 	
 	/*
 	 *
@@ -407,20 +407,11 @@ abstract class Kate {
 	public static function getItems($query = null, $data = null) {
 		
 		$db = self::getDefaultDatabase();
-		$source = self::getSource();
 		
 		self::setCurrentQuery($query,$data);
 		
-		$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
-		if(is_string($query) && !empty($query)) {
-			$query = self::getCurrentQuery();
-			$select->where($query);
-		} else if(is_array($query) && is_string($data)) {
-			$select = self::_parseParam($select,$query);
-			if(!empty($query)) $select->where($data);
-		} else if(is_array($query)) {
-			$select = self::_parseParam($select,$query);
-		}
+		if(is_a($query,'Zend_Db_Select')) $select = $query;
+		else $select = self::buildSelect($query,$data);
 		
 		self::setCurrentSelect($select);
 		
@@ -444,6 +435,25 @@ abstract class Kate {
 		}
 		
 		return self::$_currentItemsCount;
+	}
+	
+	public static function buildSelect($query = null, $data = null) {
+		
+		$db = self::getDefaultDatabase();
+		$source = $Item->getSource();
+		
+		$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
+		if(is_string($query) && !empty($query)) {
+			$query = self::getCurrentQuery();
+			$select->where($query);
+		} else if(is_array($query) && is_string($data)) {
+			$select = self::_parseParam($select,$query);
+			if(!empty($query)) $select->where($data);
+		} else if(is_array($query)) {
+			$select = self::_parseParam($select,$query);
+		}
+		
+		return $select;
 	}
 	
 	public static function getCurrentQuery() {
