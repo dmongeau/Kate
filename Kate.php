@@ -41,9 +41,9 @@ abstract class Kate {
 	
 	
 	protected static $_defaultDb;
-	protected static $_currentQuery;
-	protected static $_currentSelect;
-	protected static $_currentItemsCount;
+	protected $_currentQuery;
+	protected $_currentSelect;
+	protected $_currentItemsCount;
 	
 	
 	protected $_db;
@@ -400,116 +400,6 @@ abstract class Kate {
 	
 	/*
 	 *
-	 * Get items
-	 *
-	 */
-	
-	public static function getItems($query = null, $data = null) {
-		
-		$db = self::getDefaultDatabase();
-		
-		self::setCurrentQuery($query,$data);
-		
-		if(is_a($query,'Zend_Db_Select')) $select = $query;
-		else $select = self::buildSelect($query,$data);
-		
-		self::setCurrentSelect($select);
-		
-		return $db->fetchAll($select);
-		
-	}
-	
-	public static function getItemsCount() {
-		
-		if(self::$_currentItemsCount == -1) {
-			$db = self::getDefaultDatabase();
-			
-			$select = self::getCurrentSelect();
-			
-			$select->reset(Zend_Db_Select::COLUMNS)->reset(Zend_Db_Select::ORDER);
-			$select->columns(array('kate_count'=>'COUNT(1)'));
-			
-			$result = $db->fetchRow($select);
-			
-			self::$_currentItemsCount = count($result) > 0 ? $result['kate_count'] : 0;
-		}
-		
-		return self::$_currentItemsCount;
-	}
-	
-	public static function buildSelect($query = null, $data = null) {
-		
-		$db = self::getDefaultDatabase();
-		$source = $Item->getSource();
-		
-		$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
-		if(is_string($query) && !empty($query)) {
-			$query = self::getCurrentQuery();
-			$select->where($query);
-		} else if(is_array($query) && is_string($data)) {
-			$select = self::_parseParam($select,$query);
-			if(!empty($query)) $select->where($data);
-		} else if(is_array($query)) {
-			$select = self::_parseParam($select,$query);
-		}
-		
-		return $select;
-	}
-	
-	public static function getCurrentQuery() {
-		
-		return self::$_currentQuery;
-		
-	}
-	
-	public static function setCurrentQuery($query,$data = null) {
-		
-		self::$_currentQuery = self::_parseQuery($query,$data);
-		
-	}
-	
-	public static function getCurrentSelect() {
-		
-		return self::$_currentSelect;
-		
-	}
-	
-	public static function setCurrentSelect($select) {
-		if($select != self::$_currentSelect) {
-			self::$_currentItemsCount = -1;
-			self::$_currentSelect = $select;
-		}
-		
-	}
-	
-	protected static function _parseParam($select,$query) {
-		
-		$db = self::getDefaultDatabase();
-		
-		foreach($query as $field => $value) {
-			if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
-			elseif(isset($value)) $select->where($field.' = ?',$value);
-		}
-		
-		return $select;
-		
-	}
-	
-	protected static function _parseQuery($query,$data = null) {
-		
-		if(is_string($query) && isset($data)) {
-			foreach($data as $key => $value) {
-				$query = str_replace(':'.$key, $db->quoteInto('?',$value),$query);
-			}
-		}
-		
-		return $query;
-		
-	}
-	
-	
-	/*
-	 *
 	 * Magic methods to access object data as property
 	 *
 	 */
@@ -523,6 +413,117 @@ abstract class Kate {
 	
 	public function __set($name, $value) {
 		$this->_data[$name] = $value;
+	}
+	
+	
+	/*
+	 *
+	 * Get items
+	 *
+	 */
+	
+	public function getItems($query = null, $data = null) {
+		
+		$db = self::getDefaultDatabase();
+		
+		$this->setCurrentItemsQuery($query,$data);
+		
+		if(is_a($query,'Zend_Db_Select')) $select = $query;
+		else $select = $this->buildItemsSelect($query,$data);
+		
+		$this->setCurrentItemsSelect($select);
+		
+		return $db->fetchAll($select);
+		
+	}
+	
+	public function getItemsCount() {
+		
+		if($this->_currentItemsCount == -1) {
+			$db = self::getDefaultDatabase();
+			
+			$select = $this->getCurrentItemsSelect();
+			
+			$select->reset(Zend_Db_Select::COLUMNS)->reset(Zend_Db_Select::ORDER);
+			$select->columns(array('kate_count'=>'COUNT(1)'));
+			
+			$result = $db->fetchRow($select);
+			
+			$this->_currentItemsCount = count($result) > 0 ? $result['kate_count'] : 0;
+		}
+		
+		return $this->_currentItemsCount;
+	}
+	
+	public function buildItemsSelect($query = null, $data = null) {
+		
+		$db = self::getDefaultDatabase();
+		
+		$source = $this->getSource();
+		
+		$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
+		if(is_string($query) && !empty($query)) {
+			$query = $this->getCurrentItemsQuery();
+			$select->where($query);
+		} else if(is_array($query) && is_string($data)) {
+			$select = $this->_parseParam($select,$query);
+			if(!empty($query)) $select->where($data);
+		} else if(is_array($query)) {
+			$select = $this->_parseParam($select,$query);
+		}
+		
+		return $select;
+	}
+	
+	public function getCurrentItemsQuery() {
+		
+		return $this->_currentQuery;
+		
+	}
+	
+	public function setCurrentItemsQuery($query,$data = null) {
+		
+		$this->_currentQuery = $this->_parseQuery($query,$data);
+		
+	}
+	
+	public function getCurrentItemsSelect() {
+		
+		return $this->_currentSelect;
+		
+	}
+	
+	public function setCurrentItemsSelect($select) {
+		if($select != $this->_currentSelect) {
+			$this->_currentItemsCount = -1;
+			$this->_currentSelect = $select;
+		}
+		
+	}
+	
+	protected function _parseParam($select,$query) {
+		
+		$db = self::getDefaultDatabase();
+		
+		foreach($query as $field => $value) {
+			if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
+			elseif(isset($value)) $select->where($field.' = ?',$value);
+		}
+		
+		return $select;
+		
+	}
+	
+	protected function _parseQuery($query,$data = null) {
+		
+		if(is_string($query) && isset($data)) {
+			foreach($data as $key => $value) {
+				$query = str_replace(':'.$key, $db->quoteInto('?',$value),$query);
+			}
+		}
+		
+		return $query;
+		
 	}
 	
 	

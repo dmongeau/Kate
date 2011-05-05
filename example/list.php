@@ -29,7 +29,8 @@ Kate::setDefaultDatabase($db);
 /*
  * Create new item
  */
-$items = Item::getItems(array('id'=>array(6,7,8)));
+$Item = new Item();
+$items = $Item->getItems(array('id'=>array(6,7,8)));
 
 var_dump($items);
-echo Item::getItemsCount();
+echo $Item->getItemsCount();
