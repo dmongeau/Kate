@@ -39,6 +39,7 @@ abstract class Kate {
 	 *
 	 */
 	
+	protected static $_models = array();
 	
 	protected static $_defaultDb;
 	protected $_currentQuery;
@@ -523,6 +524,18 @@ abstract class Kate {
 		}
 		
 		return $query;
+		
+	}
+	
+	
+	
+	
+	public static function requireModel($model) {
+		
+		if(!isset(self::$_models[$model])) {
+			self::$_models[$model] = PATH_MODELS.'/'.strtoupper(substr($model,0,1)).substr($model,1).'.php';
+			require self::$_models[$model];
+		}	
 		
 	}
 	
