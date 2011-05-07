@@ -392,7 +392,7 @@ abstract class Kate {
 	}
 	
 	public static function getDefaultDatabase() {
-		if(!isset(self::$_defaultDb) && class_exists('Gregory') && isset(Gregory::get()->db)) {
+		if(!isset(self::$_defaultDb) && class_exists('Gregory') && Gregory::get()->db != null) {
 			self::$_defaultDb = Gregory::get()->db;
 		}
 		return self::$_defaultDb;
