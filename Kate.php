@@ -423,16 +423,25 @@ abstract class Kate {
 	 *
 	 */
 	
-	public function getItems($query = null, $data = null) {
+	public function getItems($query = null, $opts = array()) {
+		
+		$opts = array_merge(array(
+			'page' => -1,
+			'rpp'=> 50,
+		),$opts);
 		
 		$db = self::getDefaultDatabase();
 		
-		$this->setCurrentItemsQuery($query,$data);
-		
-		if(is_a($query,'Zend_Db_Select')) $select = $query;
-		else $select = $this->buildItemsSelect($query,$data);
+		$select = $this->buildItemsSelect($query,$opts);
 		
 		$this->setCurrentItemsSelect($select);
+		
+		if(isset($opts['page']) && isset($opts['rpp']) && (int)$opts['page'] > 0 && (int)$opts['rpp'] > 0) {
+			$total = isset($opts['total']) ? (int)$opts['total']:$this->getItemsCount();
+			$totalPages = ceil($total/$opts['rpp']);
+			$page = $opts['page'] > $totalPages ? 1:(int)$opts['page'];
+			$select->limitPage($page,$opts['rpp']);
+		}
 		
 		return $db->fetchAll($select);
 		
@@ -456,36 +465,25 @@ abstract class Kate {
 		return $this->_currentItemsCount;
 	}
 	
-	public function buildItemsSelect($query = null, $data = null) {
+	public function buildItemsSelect($query = null, $opts = null) {
 		
 		$db = self::getDefaultDatabase();
 		
 		$source = $this->getSource();
-		
-		$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
+		if(is_a($query,'Zend_Db_Select')) {
+			$select->from($source['table']['name'],$source['table']['fields']);
+			if(isset($opts['query'])) $query = $opts['query'];
+		} else {
+			$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
+		}
+			
 		if(is_string($query) && !empty($query)) {
-			$query = $this->getCurrentItemsQuery();
 			$select->where($query);
-		} else if(is_array($query) && is_string($data)) {
-			$select = $this->_parseParam($select,$query);
-			if(!empty($query)) $select->where($data);
-		} else if(is_array($query)) {
+		} else if(is_array($query) && sizeof($query)) {
 			$select = $this->_parseParam($select,$query);
 		}
 		
 		return $select;
-	}
-	
-	public function getCurrentItemsQuery() {
-		
-		return $this->_currentQuery;
-		
-	}
-	
-	public function setCurrentItemsQuery($query,$data = null) {
-		
-		$this->_currentQuery = $this->_parseQuery($query,$data);
-		
 	}
 	
 	public function getCurrentItemsSelect() {
@@ -508,6 +506,21 @@ abstract class Kate {
 		
 		foreach($query as $field => $value) {
 			if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
+			elseif($field == 'order by') {
+				$asc = strtolower(substr($value,-4));
+				$desc = strtolower(substr($value,-5));
+				if($asc == '_asc' || $asc == ' asc') {
+					$field = substr($value,0,strlen($value)-4);
+					$orientation = 'asc';
+				} elseif($desc == '_desc' || $desc == ' desc') {
+					$field = substr($value,0,strlen($value)-5);
+					$orientation = 'desc';
+				} else {
+					$field = $value;
+					$orientation = 'asc';
+				}
+				$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
+			}
 			elseif(isset($value)) $select->where($field.' = ?',$value);
 		}
 		
@@ -517,7 +530,7 @@ abstract class Kate {
 	
 	protected function _parseQuery($query,$data = null) {
 		
-		if(is_string($query) && isset($data)) {
+		if(is_string($query) && isset($data) && is_array($data)) {
 			foreach($data as $key => $value) {
 				$query = str_replace(':'.$key, $db->quoteInto('?',$value),$query);
 			}
