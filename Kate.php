@@ -369,7 +369,7 @@ abstract class Kate {
 	protected function _ensureCache() {
 		if(isset($this->_cache)) return true;
 		else {
-			$this->_cache = App::get()->cache->getCache('database');
+			$this->_cache = Gregory::get()->cache->getCache('database');
 			return true;
 		}
 	}
