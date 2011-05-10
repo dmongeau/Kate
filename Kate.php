@@ -452,7 +452,7 @@ abstract class Kate {
 		if($this->_currentItemsCount == -1) {
 			$db = self::getDefaultDatabase();
 			
-			$select = $this->getCurrentItemsSelect();
+			$select = clone $this->getCurrentItemsSelect();
 			
 			$select->reset(Zend_Db_Select::COLUMNS)->reset(Zend_Db_Select::ORDER);
 			$select->columns(array('kate_count'=>'COUNT(1)'));
