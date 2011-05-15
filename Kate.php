@@ -476,6 +476,13 @@ abstract class Kate {
 		} else {
 			$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
 		}
+		
+		$leftJoins = $this->_getTableLeftJoins();
+		if(isset($leftJoins) && sizeof($leftJoins)) {
+			foreach($leftJoins as $leftJoin) {
+				if(sizeof($leftJoin) == 3) $select->joinLeft($leftJoin[0],$leftJoin[1],$leftJoin[2]);	
+			}
+		}
 			
 		if(is_string($query) && !empty($query)) {
 			$select->where($query);
@@ -504,8 +511,12 @@ abstract class Kate {
 		
 		$db = self::getDefaultDatabase();
 		
+		$methods = get_class_methods($this);
+		
 		foreach($query as $field => $value) {
-			if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
+			$methodName = '_query'.strtoupper(substr($field,0,1)).strtolower(substr($field,1));
+			if(in_array($methodName,$methods)) $select = $this->{$methodName}($select,$value);
+			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
 			elseif($field == 'order by') {
 				$asc = strtolower(substr($value,-4));
 				$desc = strtolower(substr($value,-5));
