@@ -539,7 +539,7 @@ abstract class Kate {
 				}
 				$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
 			}
-			elseif(isset($value)) $select->where($field.' = ?',$value);
+			elseif(isset($value) && $this->_isTableField($field)) $select->where($field.' = ?',$value);
 		}
 		
 		return $select;
