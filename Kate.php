@@ -477,6 +477,11 @@ abstract class Kate {
 			$select = $db->select()->from($source['table']['name'],$source['table']['fields']);
 		}
 		
+		if(method_exists($this,'_filterSelect')) {
+			$filterSelect = $this->_filterSelect($select);
+			if(isset($filterSelect)) $select = $filterSelect;
+		} 
+		
 		$leftJoins = $this->_getTableLeftJoins();
 		if(isset($leftJoins) && sizeof($leftJoins)) {
 			foreach($leftJoins as $leftJoin) {
