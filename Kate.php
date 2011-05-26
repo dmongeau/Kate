@@ -514,6 +514,8 @@ abstract class Kate {
 		$methods = get_class_methods($this);
 		
 		foreach($query as $field => $value) {
+			$fieldName = strpos($field,'.') !== false ? substr($field,strpos($field,'.')+1):$field;
+			$field = $this->_getTableFieldName($field);
 			$methodName = '_query'.strtoupper(substr($field,0,1)).strtolower(substr($field,1));
 			if(in_array($methodName,$methods)) $select = $this->{$methodName}($select,$value);
 			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
