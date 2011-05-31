@@ -200,6 +200,7 @@ abstract class Kate {
 		if(isset($data[$this->_getTablePrimary()])) {
 			$primary = $data[$this->_getTablePrimary()];
 			if($primary != $this->getPrimary()) $this->setPrimary($primary);
+			$this->isNew(false);
 		}
 	}
 	
