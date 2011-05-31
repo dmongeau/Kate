@@ -47,7 +47,7 @@ abstract class Kate {
 	protected $_currentItemsCount;
 	
 	
-	protected $_db;
+	public $db;
 	protected $_cache;
 	
 	protected $_primary;
@@ -55,7 +55,7 @@ abstract class Kate {
 	protected $_data = array();
 	protected $_describeTable;
 	
-	public $_isNew = false;
+	public $_isNew = true;
 	public $_fetched = false;
 	
 	public function __construct($primary = null) {
@@ -63,6 +63,7 @@ abstract class Kate {
 		if(isset($primary)) {
 			$primary = $this->verifyPrimary($primary);
 			$this->setPrimary($primary);
+			$this->isNew(false);
 		}
 		
 	}
@@ -127,7 +128,6 @@ abstract class Kate {
 				
 				$db->insert($this->_getTable(),$data);
 				$this->setPrimary($db->lastInsertId());
-				$this->isNew(true);
 				
 			} else {
 				$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
@@ -255,11 +255,12 @@ abstract class Kate {
 	}
 	
 	public function setDatabase(&$db) {
-		$this->_db = $db;
+		$this->db = $db;
 	}
 	
 	public function getDatabase() {
-		return isset($this->_db) ? $this->_db:self::getDefaultDatabase();
+		if(!isset($this->db)) $this->db = self::getDefaultDatabase();
+		return $this->db;
 	}
 	
 	protected function _getTable() {
@@ -520,6 +521,7 @@ abstract class Kate {
 		
 		foreach($query as $field => $value) {
 			
+			
 			$fieldName = strpos($field,'.') !== false ? substr($field,strpos($field,'.')+1):$field;
 			$field = $this->_getTableFieldName($field);
 			$methodName = '_query'.strtoupper(substr($field,0,1)).strtolower(substr($field,1));
@@ -540,6 +542,13 @@ abstract class Kate {
 					$orientation = 'asc';
 				}
 				$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
+			}
+			elseif(substr($field,0,4) == 'not ') {
+				$field = $this->_getTableFieldName(substr($field,4));
+				
+				if(is_array($value) && sizeof($value)) $select->where($field.' NOT IN('.$db->quote($value).')');
+				else if(!empty($value)) $select->where($field.' != ?',$value);
+				
 			}
 			elseif(isset($value) && $this->_isTableField($fieldName)) $select->where($field.' = ?',$value);
 			
