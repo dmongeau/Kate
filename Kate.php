@@ -48,7 +48,7 @@ abstract class Kate {
 	
 	
 	public $db;
-	protected $_cache;
+	protected static $_cache;
 	
 	protected $_primary;
 	protected $_id;
@@ -167,12 +167,15 @@ abstract class Kate {
 		
 		$primary = $this->getPrimary();
 		$source = $this->getSource();
-				
+		
 		if($primary && $this->isNew()) {
 			
 			$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
 			
 			$db->delete($this->_getTableName(),$where);
+			
+			$this->setData(array());
+			$this->setPrimary(null);
 			
 		}
 		
@@ -337,14 +340,16 @@ abstract class Kate {
 	
 	protected function _getDescribeTable() {
 		
+		if(isset($this->_describeTable)) return $this->_describeTable;
+		
 		$db = $this->getDatabase();
 		
-		$cache = $this->_getCache();
+		$cache = self::getCache();
 		$cacheKey = $this->_getCacheKey().'_describe';
 		
-		if(!isset($this->_describeTable) && (!$this->_hasCache() || !$this->_describeTable = $cache->load($cacheKey))) {
+		if(!isset($this->_describeTable) && (!self::hasCache() || !$this->_describeTable = $cache->load($cacheKey))) {
 			$this->_describeTable = $db->describeTable($this->_getTableName());
-			if($this->_hasCache()) $cache->save($this->_describeTable, $cacheKey);
+			if(self::hasCache()) $cache->save($this->_describeTable, $cacheKey);
 		}
 		
 		return $this->_describeTable;
@@ -357,27 +362,27 @@ abstract class Kate {
 	 *
 	 */
 	
-	public function _hasCache() {
-		if(!isset($this->_cache) || !$this->_cache) return false;
-		return true;
-	}
-	public function _getCache() {
-		return $this->_cache;
-	}
-	public function _setCache($cache) {
-		$this->_cache = $cache;
-	}
-	
-	protected function _ensureCache() {
-		if(isset($this->_cache)) return true;
-		else {
-			$this->_cache = Gregory::get()->cache->getCache('database');
-			return true;
-		}
-	}
-	
 	protected function _getCacheKey() {
 		return 'kate_'.$this->_getTableShort().'_'.$this->_getTableName();
+	}
+	
+	public static function hasCache() {
+		if(!isset(self::$_cache) || !self::$_cache) return false;
+		return true;
+	}
+	public static function getCache() {
+		return self::$_cache;
+	}
+	public static function setCache($cache) {
+		self::$_cache = $cache;
+	}
+	
+	protected static function _ensureCache() {
+		if(isset(self::$_cache)) return true;
+		else {
+			self::$_cache = Gregory::get()->cache->getCache('kate');
+			return true;
+		}
 	}
 	
 	
@@ -544,6 +549,9 @@ abstract class Kate {
 				}
 				$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
 			}
+			elseif($field == 'group by') {
+				$select->group($this->_getTableFieldName($value));
+			}
 			elseif(substr($field,0,4) == 'not ') {
 				$field = $this->_getTableFieldName(substr($field,4));
 				
@@ -570,7 +578,6 @@ abstract class Kate {
 		return $query;
 		
 	}
-	
 	
 	
 	
