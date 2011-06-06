@@ -346,7 +346,8 @@ abstract class Kate {
 		$cacheKey = $this->_getCacheKey().'_describe';
 		
 		if((!self::hasCache() || !$this->_describeTable = $cache->load($cacheKey))) {
-			$this->_describeTable = $this->db->describeTable($this->_getTableName());
+			$db = $this->getDatabase();
+			$this->_describeTable = $db->describeTable($this->_getTableName());
 			if(self::hasCache()) $cache->save($this->_describeTable, $cacheKey);
 		}
 		
