@@ -529,7 +529,7 @@ abstract class Kate {
 			
 			$fieldName = strpos($field,'.') !== false ? substr($field,strpos($field,'.')+1):$field;
 			$field = $this->_getTableFieldName($field);
-			$methodName = '_query'.strtoupper(substr($field,0,1)).strtolower(substr($field,1));
+			$methodName = '_query'.strtoupper(substr($fieldName,0,1)).strtolower(substr($fieldName,1));
 			
 			if(in_array($methodName,$methods)) $select = $this->{$methodName}($select,$value);
 			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
@@ -556,6 +556,13 @@ abstract class Kate {
 				
 				if(is_array($value) && sizeof($value)) $select->where($field.' NOT IN('.$db->quote($value).')');
 				else if(!empty($value)) $select->where($field.' != ?',$value);
+				
+			}
+			elseif(substr($field,0,6) == 'lower ') {
+				$field = $this->_getTableFieldName(substr($field,6));
+				
+				if(is_array($value) && sizeof($value)) $select->where('LOWER('.$field.') IN('.$db->quote($value).')');
+				else if(!empty($value)) $select->where('LOWER('.$field.') = ?',strtolower($value));
 				
 			}
 			elseif(isset($value) && $this->_isTableField($fieldName)) $select->where($field.' = ?',$value);
