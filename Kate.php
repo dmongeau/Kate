@@ -225,7 +225,9 @@ abstract class Kate {
 		
 		$select = $db->select()->from($this->_getTable(),array($this->_getTablePrimary()));
 		
-		if(method_exists($this,'_selectPrimary')) {
+		if(is_array($primary)) {
+			$select = $this->_parseQuery($select,$primary);
+		} else if(method_exists($this,'_selectPrimary')) {
 			$select = $this->_selectPrimary($select,$primary);
 		} else {
 			$select->where($this->_getTablePrimary(true).' = ?', $primary);
@@ -498,7 +500,7 @@ abstract class Kate {
 		if(is_string($query) && !empty($query)) {
 			$select->where($query);
 		} else if(is_array($query) && sizeof($query)) {
-			$select = $this->_parseParam($select,$query);
+			$select = $this->_parseQuery($select,$query);
 		}
 		
 		return $select;
@@ -518,7 +520,7 @@ abstract class Kate {
 		
 	}
 	
-	protected function _parseParam($select,$query) {
+	protected function _parseQuery($select,$query) {
 		
 		$db = self::getDefaultDatabase();
 		
@@ -573,7 +575,7 @@ abstract class Kate {
 		
 	}
 	
-	protected function _parseQuery($query,$data = null) {
+	/*protected function _parseQuery($query,$data = null) {
 		
 		if(is_string($query) && isset($data) && is_array($data)) {
 			foreach($data as $key => $value) {
@@ -583,7 +585,7 @@ abstract class Kate {
 		
 		return $query;
 		
-	}
+	}*/
 	
 	
 	
