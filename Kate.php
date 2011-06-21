@@ -109,8 +109,8 @@ abstract class Kate {
 			
 		$data = array();	
 		foreach($inputs as $key => $value) {
-			if(method_exists($this,'_put'.$key)) eval('$data = $this->_put'.$key.'($data,$value,$inputs);');
-			else $data[$key] = $value;
+			if(method_exists($this,'_put'.$key)) $data = $this->{'_put'.$key}($data,$value,$inputs);
+			elseif(!isset($data[$key])) $data[$key] = $value;
 		}
 		
 		$data = $this->_filterTableFields($data);
