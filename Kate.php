@@ -60,6 +60,8 @@ abstract class Kate {
 	
 	public function __construct($primary = null) {
 		
+        if(!isset($this->db)) $this->db = self::getDefaultDatabase();
+        
 		if(isset($primary)) {
 			$primary = $this->verifyPrimary($primary);
 			$this->setPrimary($primary);
@@ -187,18 +189,20 @@ abstract class Kate {
 	 *
 	 */
     public function getRelatedItems($table) {
+        $db = $this->db;
 		$data = $this->getData();
-		
-		$select = $this->db->select()->from(array($table),array('*'));
+
+		$select = $db->select()->from(array($table),array('*'));
 		
 		$select->where($this->_getTablePrimary().' = ?',$data[$this->_getTablePrimary()]);
 		
-		$items = $this->db->fetchAll($select);
+		$items = $db->fetchAll($select);
 		
 		return $items;
 	}
 	
 	public function updateRelatedItems($items,$table,$primary) {
+        $db = $this->db();
 		$data = $this->fetch();
 		$id = $data[$this->_getTablePrimary()];
 		
@@ -206,17 +210,17 @@ abstract class Kate {
 		foreach($items as $item) {
 			$item[$this->_getTablePrimary()] = $id;
 			if(isset($item[$primary]) && (int)$item[$primary] > 0) {
-				$this->db->update($table,$item,$this->db->quoteInto($primary.' = ?',$item[$primary]));
+				$db->update($table,$item, $db->quoteInto($primary.' = ?',$item[$primary]));
 				$ids[] = $item[$primary];
 			} else {
 				unset($item[$primary]);
-				$this->db->insert($table,$item);
-				$ids[] = $this->db->lastInsertId();
+				$db->insert($table,$item);
+				$ids[] = $db->lastInsertId();
 			}
 		}
 		
-		if(sizeof($ids)) $this->db->delete($table,$primary.' NOT IN('.implode(',',$ids).') AND '.$this->_getTablePrimary().' = '.$id);
-		else $this->db->delete($table,$this->db->quoteInto($this->_getTablePrimary().' = ?',$id));
+		if(sizeof($ids)) $db->delete($table,$primary.' NOT IN('.implode(',',$ids).') AND '.$this->_getTablePrimary().' = '.$id);
+		else $db->delete($table,$db->quoteInto($this->_getTablePrimary().' = ?',$id));
 	}
 	
 	/*
