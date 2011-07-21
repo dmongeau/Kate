@@ -181,6 +181,43 @@ abstract class Kate {
 		
 	}
 	
+    /*
+	 *
+	 * Related Items
+	 *
+	 */
+    public function getRelatedItems($table) {
+		$data = $this->getData();
+		
+		$select = $this->db->select()->from(array($table),array('*'));
+		
+		$select->where($this->_getTablePrimary().' = ?',$data[$this->_getTablePrimary()]);
+		
+		$items = $this->db->fetchAll($select);
+		
+		return $items;
+	}
+	
+	public function updateRelatedItems($items,$table,$primary) {
+		$data = $this->fetch();
+		$id = $data[$this->_getTablePrimary()];
+		
+		$ids = array();
+		foreach($items as $item) {
+			$item[$this->_getTablePrimary()] = $id;
+			if(isset($item[$primary]) && (int)$item[$primary] > 0) {
+				$this->db->update($table,$item,$this->db->quoteInto($primary.' = ?',$item[$primary]));
+				$ids[] = $item[$primary];
+			} else {
+				unset($item[$primary]);
+				$this->db->insert($table,$item);
+				$ids[] = $this->db->lastInsertId();
+			}
+		}
+		
+		if(sizeof($ids)) $this->db->delete($table,$primary.' NOT IN('.implode(',',$ids).') AND '.$this->_getTablePrimary().' = '.$id);
+		else $this->db->delete($table,$this->db->quoteInto($this->_getTablePrimary().' = ?',$id));
+	}
 	
 	/*
 	 *
