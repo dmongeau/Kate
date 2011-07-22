@@ -202,7 +202,7 @@ abstract class Kate {
 	}
 	
 	public function updateRelatedItems($items,$table,$primary) {
-        $db = $this->db();
+        $db = $this->db;
 		$data = $this->fetch();
 		$id = $data[$this->_getTablePrimary()];
 		
