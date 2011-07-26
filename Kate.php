@@ -53,6 +53,7 @@ abstract class Kate {
 	protected $_primary;
 	protected $_id;
 	protected $_data = array();
+	protected $_dataSet = array();
 	protected $_describeTable;
 	
 	public $_isNew = true;
@@ -107,7 +108,8 @@ abstract class Kate {
 		
 		$primary = $this->getPrimary();
 		$source = $this->getSource();
-		$inputs = $this->getData();
+		//$inputs = $this->getData();
+		$inputs = $this->_dataSet;
 			
 		$data = array();	
 		foreach($inputs as $key => $value) {
@@ -135,6 +137,7 @@ abstract class Kate {
 				$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
 				$db->update($this->_getTableName(),$data,$where);
 			}
+			$this->_dataSet = array();
 		}
 		
 	}
@@ -240,7 +243,10 @@ abstract class Kate {
 	public function setData($data, $merge = true) {
 		if(isset($this->_data) && is_array($this->_data) && $merge) {
 			$this->_data = array_merge($this->_data,$data);
-		} else $this->_data = $data;
+		} else {
+			$this->_data = $data;
+		}
+		$this->_dataSet = array_merge($this->_dataSet,$data);
 		if(isset($data[$this->_getTablePrimary()])) {
 			$primary = $data[$this->_getTablePrimary()];
 			if($primary != $this->getPrimary()) $this->setPrimary($primary);
