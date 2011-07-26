@@ -219,6 +219,10 @@ abstract class Kate {
 		$this->_primary = $primary;
 	}
 	
+	public function getRelated() {
+		return get_class($this).'_'.$this->getPrimary();
+	}
+	
 	public function verifyPrimary($primary) {
 		
 		$db = $this->getDatabase();
