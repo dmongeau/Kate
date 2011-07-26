@@ -95,7 +95,7 @@ abstract class Kate {
 		
 		if(!$data) throw new App_Exception('Il s\'est produit une erreur',404);
 		
-		$this->setData($data,false);
+		$this->setData($data,false,true);
 		$this->_fetched = true;
 		
 		return $this->getData();
@@ -240,13 +240,13 @@ abstract class Kate {
 		return $this->_data;
 	}
 	
-	public function setData($data, $merge = true) {
+	public function setData($data, $merge = true, $fetched = false) {
 		if(isset($this->_data) && is_array($this->_data) && $merge) {
 			$this->_data = array_merge($this->_data,$data);
 		} else {
 			$this->_data = $data;
 		}
-		$this->_dataSet = array_merge($this->_dataSet,$data);
+		if(!$fetched) $this->_dataSet = array_merge($this->_dataSet,$data);
 		if(isset($data[$this->_getTablePrimary()])) {
 			$primary = $data[$this->_getTablePrimary()];
 			if($primary != $this->getPrimary()) $this->setPrimary($primary);
