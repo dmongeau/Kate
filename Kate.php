@@ -53,7 +53,6 @@ abstract class Kate {
 	protected $_primary;
 	protected $_id;
 	protected $_data = array();
-	protected $_dataSet = array();
 	protected $_describeTable;
 	
 	public $_isNew = true;
@@ -61,8 +60,6 @@ abstract class Kate {
 	
 	public function __construct($primary = null) {
 		
-        if(!isset($this->db)) $this->db = self::getDefaultDatabase();
-        
 		if(isset($primary)) {
 			$primary = $this->verifyPrimary($primary);
 			$this->setPrimary($primary);
@@ -95,7 +92,7 @@ abstract class Kate {
 		
 		if(!$data) throw new App_Exception('Il s\'est produit une erreur',404);
 		
-		$this->setData($data,false,true);
+		$this->setData($data,false);
 		$this->_fetched = true;
 		
 		return $this->getData();
@@ -108,8 +105,7 @@ abstract class Kate {
 		
 		$primary = $this->getPrimary();
 		$source = $this->getSource();
-		//$inputs = $this->getData();
-		$inputs = $this->_dataSet;
+		$inputs = $this->getData();
 			
 		$data = array();	
 		foreach($inputs as $key => $value) {
@@ -137,7 +133,6 @@ abstract class Kate {
 				$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
 				$db->update($this->_getTableName(),$data,$where);
 			}
-			$this->_dataSet = array();
 		}
 		
 	}
@@ -186,45 +181,6 @@ abstract class Kate {
 		
 	}
 	
-    /*
-	 *
-	 * Related Items
-	 *
-	 */
-    public function getRelatedItems($table) {
-        $db = $this->db;
-		$data = $this->getData();
-
-		$select = $db->select()->from(array($table),array('*'));
-		
-		$select->where($this->_getTablePrimary().' = ?',$data[$this->_getTablePrimary()]);
-		
-		$items = $db->fetchAll($select);
-		
-		return $items;
-	}
-	
-	public function updateRelatedItems($items,$table,$primary) {
-        $db = $this->db;
-		$data = $this->fetch();
-		$id = $data[$this->_getTablePrimary()];
-		
-		$ids = array();
-		foreach($items as $item) {
-			$item[$this->_getTablePrimary()] = $id;
-			if(isset($item[$primary]) && (int)$item[$primary] > 0) {
-				$db->update($table,$item, $db->quoteInto($primary.' = ?',$item[$primary]));
-				$ids[] = $item[$primary];
-			} else {
-				unset($item[$primary]);
-				$db->insert($table,$item);
-				$ids[] = $db->lastInsertId();
-			}
-		}
-		
-		if(sizeof($ids)) $db->delete($table,$primary.' NOT IN('.implode(',',$ids).') AND '.$this->_getTablePrimary().' = '.$id);
-		else $db->delete($table,$db->quoteInto($this->_getTablePrimary().' = ?',$id));
-	}
 	
 	/*
 	 *
@@ -240,13 +196,10 @@ abstract class Kate {
 		return $this->_data;
 	}
 	
-	public function setData($data, $merge = true, $fetched = false) {
+	public function setData($data, $merge = true) {
 		if(isset($this->_data) && is_array($this->_data) && $merge) {
 			$this->_data = array_merge($this->_data,$data);
-		} else {
-			$this->_data = $data;
-		}
-		if(!$fetched) $this->_dataSet = array_merge($this->_dataSet,$data);
+		} else $this->_data = $data;
 		if(isset($data[$this->_getTablePrimary()])) {
 			$primary = $data[$this->_getTablePrimary()];
 			if($primary != $this->getPrimary()) $this->setPrimary($primary);
@@ -264,10 +217,6 @@ abstract class Kate {
 	
 	public function setPrimary($primary) {
 		$this->_primary = $primary;
-	}
-	
-	public function getRelated() {
-		return get_class($this).'_'.$this->getPrimary();
 	}
 	
 	public function verifyPrimary($primary) {
@@ -585,22 +534,30 @@ abstract class Kate {
 			$methodName = '_query'.strtoupper(substr($fieldName,0,1)).strtolower(substr($fieldName,1));
 			
 			if(in_array($methodName,$methods)) $select = $this->{$methodName}($select,$value);
-			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
 			elseif($field == 'order by') {
-				$asc = strtolower(substr($value,-4));
-				$desc = strtolower(substr($value,-5));
-				if($asc == '_asc' || $asc == ' asc') {
-					$field = substr($value,0,strlen($value)-4);
-					$orientation = 'asc';
-				} elseif($desc == '_desc' || $desc == ' desc') {
-					$field = substr($value,0,strlen($value)-5);
-					$orientation = 'desc';
-				} else {
-					$field = $value;
-					$orientation = 'asc';
+				$value = !is_array($value) ? array($value):$value;
+				foreach($value as $order) {
+					$asc = strtolower(substr($order,-4));
+					$desc = strtolower(substr($order,-5));
+					if($asc == '_asc' || $asc == ' asc') {
+						$field = substr($order,0,strlen($order)-4);
+						$orientation = 'asc';
+					} elseif($desc == '_desc' || $desc == ' desc') {
+						$field = substr($order,0,strlen($order)-5);
+						$orientation = 'desc';
+					} else {
+						$field = $order;
+						$orientation = 'asc';
+					}
+					
+					if($field == 't.tid = m.tid1') {
+						$select->order(new Zend_Db_Expr($field.' '.strtoupper($orientation)));	
+					} else {
+						$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
+					}
 				}
-				$select->order($this->_getTableFieldName($field).' '.strtoupper($orientation));
 			}
+			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
 			elseif($field == 'group by') {
 				$select->group($this->_getTableFieldName($value));
 			}
@@ -642,9 +599,11 @@ abstract class Kate {
 	
 	public static function requireModel($model) {
 		
-		if(!isset(self::$_models[$model])) {
-			self::$_models[$model] = PATH_MODELS.'/'.strtoupper(substr($model,0,1)).substr($model,1).'.php';
-			require self::$_models[$model];
+		$key = strtolower($model);
+		
+		if(!isset(self::$_models[$key])) {
+			self::$_models[$key] = PATH_MODELS.'/'.strtoupper(substr($model,0,1)).strtolower(substr($model,1)).'.php';
+			require self::$_models[$key];
 		}	
 		
 	}
