@@ -504,10 +504,14 @@ abstract class Kate {
 		
 		$items = $db->fetchAll($select);
 		
-		if(isset($opts['class']) && !empty($opts['class']) && class_exists($opts['class'])) {
+		if(
+			isset($opts['class']) && !empty($opts['class']) && 
+			((is_string($opts['class']) && class_exists($opts['class'])) || is_a($opts['class'],'Kate'))
+		) {
+			$className = is_string($opts['class']) ? is_string($opts['class']):get_class($opts['class']);
 			$objects = array();
 			foreach($items as $item) {
-				eval('$Item = new '.$opts['class'].'();');
+				eval('$Item = new '.$className.'();');
 				$Item->setData($item);
 				$objects[] = $Item;
 			}
