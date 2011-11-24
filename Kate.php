@@ -455,6 +455,23 @@ abstract class Kate {
 		
 	}
 	
+	public function getItemsAsObjects($query = null, $opts = array()) {
+		
+		$items = $this->getItems($query,$opts);
+		
+		$className = get_class($this);
+		
+		$objects = array();
+		foreach($items as $item) {
+			eval('$Item = new '.$className.'();');
+			$Item->setData($item);
+			$objects[] = $Item;
+		}
+		
+		return $objects;
+		
+	}
+	
 	public function getItemsCount() {
 		
 		if($this->_currentItemsCount == -1) {
