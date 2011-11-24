@@ -502,7 +502,19 @@ abstract class Kate {
 			$select->limitPage($page,$opts['rpp']);
 		}
 		
-		return $db->fetchAll($select);
+		$items = $db->fetchAll($select);
+		
+		if(isset($opts['class']) && !empty($opts['class']) && class_exists($opts['class'])) {
+			$objects = array();
+			foreach($items as $item) {
+				eval('$Item = new '.$opts['class'].'();');
+				$Item->setData($item);
+				$objects[] = $Item;
+			}
+			$items = $objects;
+		}
+		
+		return $items;
 		
 	}
 	
