@@ -53,6 +53,7 @@ abstract class Kate {
 	protected $_primary;
 	protected $_id;
 	protected $_data = array();
+	protected $_dataSet = array();
 	protected $_describeTable;
 	
 	public $_isNew = true;
@@ -92,7 +93,14 @@ abstract class Kate {
 		
 		if(!$data) throw new App_Exception('Il s\'est produit une erreur',404);
 		
-		$this->setData($data,false);
+		$item = array();
+		foreach($data as $key => $value) {
+			if(method_exists($this,'_get'.$key)) $item = $this->{'_get'.$key}($item,$value,$data);
+			elseif(!isset($item[$key])) $item[$key] = $value;
+		}
+		
+		//$this->setData($item,false);
+		$this->setData($data,false,true);
 		$this->_fetched = true;
 		
 		return $this->getData();
@@ -105,7 +113,8 @@ abstract class Kate {
 		
 		$primary = $this->getPrimary();
 		$source = $this->getSource();
-		$inputs = $this->getData();
+		//$inputs = $this->getData();
+		$inputs = $this->_dataSet;
 			
 		$data = array();	
 		foreach($inputs as $key => $value) {
@@ -133,6 +142,7 @@ abstract class Kate {
 				$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
 				$db->update($this->_getTableName(),$data,$where);
 			}
+			$this->_dataSet = array();
 		}
 		
 	}
@@ -196,10 +206,23 @@ abstract class Kate {
 		return $this->_data;
 	}
 	
-	public function setData($data, $merge = true) {
+	/*public function setData($data, $merge = true) {
 		if(isset($this->_data) && is_array($this->_data) && $merge) {
 			$this->_data = array_merge($this->_data,$data);
 		} else $this->_data = $data;
+		if(isset($data[$this->_getTablePrimary()])) {
+			$primary = $data[$this->_getTablePrimary()];
+			if($primary != $this->getPrimary()) $this->setPrimary($primary);
+			$this->isNew(false);
+		}
+	}*/
+	public function setData($data, $merge = true, $fetched = false) {
+		if(isset($this->_data) && is_array($this->_data) && $merge) {
+			$this->_data = array_merge($this->_data,$data);
+		} else {
+			$this->_data = $data;
+		}
+		if(!$fetched) $this->_dataSet = array_merge($this->_dataSet,$data);
 		if(isset($data[$this->_getTablePrimary()])) {
 			$primary = $data[$this->_getTablePrimary()];
 			if($primary != $this->getPrimary()) $this->setPrimary($primary);
@@ -622,6 +645,31 @@ abstract class Kate {
 			self::$_models[$key] = PATH_MODELS.'/'.strtoupper(substr($model,0,1)).strtolower(substr($model,1)).'.php';
 			require self::$_models[$key];
 		}	
+		
+	}
+	
+	
+	public static function create($model,$primary = null) {
+		
+		$classname = strtoupper(substr($model,0,1)).strtolower(substr($model,1));
+		
+		self::requireModel($classname);
+		
+		eval('$Item = new '.$classname.'($primary);');
+		return $Item;
+		
+	}
+	
+	public static function get($model,$primary) {
+		
+		return self::create($model,$primary);
+		
+	}
+	
+	public static function getAll($model,$query = array(),$opts = array()) {
+		
+		$Item = self::create($model);
+		return $Item->getItems($query,$opts);
 		
 	}
 	
