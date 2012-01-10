@@ -91,7 +91,7 @@ abstract class Kate {
 		
 		$data = $db->fetchRow($select);
 		
-		if(!$data) throw new App_Exception('Il s\'est produit une erreur',404);
+		if(!$data) throw new Exception('Il s\'est produit une erreur',404);
 		
 		$item = array();
 		foreach($data as $key => $value) {
@@ -166,7 +166,7 @@ abstract class Kate {
 				$db->delete($this->_getTableName(),$where);
 			}
 		} else {
-			throw App_Exception('Il s\'est produit une erreur',500);
+			throw Exception('Il s\'est produit une erreur',500);
 		}
 		
 	}
@@ -178,7 +178,7 @@ abstract class Kate {
 		$primary = $this->getPrimary();
 		$source = $this->getSource();
 		
-		if($primary && $this->isNew()) {
+		if($this->isCancelable()) {
 			
 			$where = $db->quoteInto($this->_getTablePrimary().' = ?', $primary);
 			
@@ -187,10 +187,65 @@ abstract class Kate {
 			$this->setData(array());
 			$this->setPrimary(null);
 			
+			return true;
+			
 		}
+		
+		return false;
 		
 	}
 	
+	public function isCancelable() {
+		
+		$primary = $this->getPrimary();
+		
+		return $primary && $this->isNew() ? true:false;
+		
+	}
+	
+	/*
+	 *
+	 *
+	 * Related items
+	 *
+	 *
+	 */
+	public function getRelatedItems($table) {
+	
+		$db = $this->getDatabase();
+		
+		$select = $db->select()->from(array($table),array('*'));
+		
+		$select->where($this->_getTablePrimary().' = ?',$this->getPrimary());
+		
+		$items = $db->fetchAll($select);
+		
+		return $items;
+	}
+	
+	public function updateRelatedItems($items,$table,$primary) {
+	
+		$db = $this->getDatabase();
+		
+		$primaryField = $this->_getTablePrimary();
+		$primaryValue = $this->getPrimary();
+		
+		$ids = array();
+		foreach($items as $item) {
+			$item[$primaryField] = $primaryValue;
+			if(isset($item[$primary]) && (int)$item[$primary] > 0) {
+				$db->update($table,$item,$db->quoteInto($primary.' = ?',$item[$primary]));
+				$ids[] = $item[$primary];
+			} else {
+				$item['dateadded'] = date('Y-m-d H:i:s');
+				$db->insert($table,$item);
+				$ids[] = $db->lastInsertId();
+			}
+		}
+		
+		if(sizeof($ids)) $db->delete($table,$primary.' NOT IN('.implode(',',$ids).') AND '.$primaryField.' = '.$primaryValue);
+		else $db->delete($table,$db->quoteInto($primaryField.' = ?',$primaryValue));
+	}
 	
 	/*
 	 *
