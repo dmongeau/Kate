@@ -529,7 +529,15 @@ abstract class Kate {
 			$select->limitPage($page,$opts['rpp']);
 		}
 		
-		return $db->fetchAll($select);
+		try {
+			$items = $db->fetchAll(preg_replace('/^SELECT /','SELECT SQL_CALC_FOUND_ROWS ',$select));
+			$total = $db->fetchRow('SELECT FOUND_ROWS();');
+			$this->_currentItemsCount = $total && isset($total['FOUND_ROWS()']) ? (int)$total['FOUND_ROWS()']:0;
+		} catch(Exception $e) {
+			$items = $db->fetchAll($select);
+		}
+		
+		return $items;
 		
 	}
 	
