@@ -99,8 +99,8 @@ abstract class Kate {
 			elseif(!isset($item[$key])) $item[$key] = $value;
 		}
 		
-		//$this->setData($item,false);
-		$this->setData($data,false,true);
+		$this->setData($item,false,true);
+		//$this->setData($data,false,true);
 		$this->_fetched = true;
 		
 		return $this->getData();
