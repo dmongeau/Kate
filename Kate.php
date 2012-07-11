@@ -98,9 +98,10 @@ abstract class Kate {
 			if(method_exists($this,'_get'.$key)) $item = $this->{'_get'.$key}($item,$value,$data);
 			elseif(!isset($item[$key])) $item[$key] = $value;
 		}
-		
+
+		//$this->setData($item,false);
 		$this->setData($item,false,true);
-		//$this->setData($data,false,true);
+
 		$this->_fetched = true;
 		
 		return $this->getData();
