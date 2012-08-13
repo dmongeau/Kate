@@ -661,7 +661,6 @@ abstract class Kate {
 					}
 				}
 			}
-			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
 			elseif($field == 'group by') {
 				$select->group($this->_getTableFieldName($value));
 			}
@@ -679,6 +678,7 @@ abstract class Kate {
 				else if(!empty($value)) $select->where('LOWER('.$field.') = ?',strtolower($value));
 				
 			}
+			else if(is_array($value) && sizeof($value)) $select->where($field.' IN('.$db->quote($value).')');
 			elseif(isset($value) && $this->_isTableField($fieldName)) $select->where($field.' = ?',$value);
 			
 		}
