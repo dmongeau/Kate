@@ -669,14 +669,14 @@ abstract class Kate {
 				$field = $this->_getTableFieldName(substr($field,4));
 				
 				if(is_array($value) && sizeof($value)) $select->where($field.' NOT IN('.$db->quote($value).')');
-				else if(!empty($value)) $select->where($field.' != ?',$value);
+				else if(isset($value)) $select->where($field.' != ?',$value);
 				
 			}
 			elseif(substr($field,0,6) == 'lower ') {
 				$field = $this->_getTableFieldName(substr($field,6));
 				
 				if(is_array($value) && sizeof($value)) $select->where('LOWER('.$field.') IN('.$db->quote($value).')');
-				else if(!empty($value)) $select->where('LOWER('.$field.') = ?',strtolower($value));
+				else if(isset($value)) $select->where('LOWER('.$field.') = ?',strtolower($value));
 				
 			}
 			elseif(isset($value) && $this->_isTableField($fieldName)) $select->where($field.' = ?',$value);
